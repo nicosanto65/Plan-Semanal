@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan · Performance Dashboard</title>
+<style>
+  :root{
+    --bg:#12140f;
+    --panel:#191c14;
+    --panel-2:#1e2118;
+    --line:#2c2f24;
+    --line-soft:#22251b;
+    --text:#eef0e4;
+    --sub:#9aa08a;
+    --sub-2:#6c7160;
+    --am:#7fae62;
+    --pm:#c99a44;
+    --nt:#5b7fa6;
+    --accent:#d9772f;
+    --ok:#7fae62;
+    --tbd:#8a6b8f;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Georgia','Iowan Old Style',serif;
+    padding:0 0 90px;
+  }
+  .sans{font-family:-apple-system,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:900px;margin:0 auto;padding:24px 16px 0;}
+
+  /* ---------- nav ---------- */
+  nav.tabs{
+    position:sticky;top:0;z-index:40;
+    background:rgba(18,20,15,0.92);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);
+  }
+  .tabs-inner{
+    max-width:900px;margin:0 auto;
+    display:flex;gap:4px;padding:0 12px;
+    font-family:-apple-system,Helvetica,Arial,sans-serif;
+    overflow-x:auto;
+  }
+  .tab-btn{
+    background:transparent;border:none;color:var(--sub);
+    font-size:13px;padding:14px 12px 12px;cursor:pointer;
+    border-bottom:2px solid transparent;white-space:nowrap;
+    letter-spacing:0.02em;
+  }
+  .tab-btn.is-active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
+
+  header{margin-bottom:18px;}
+  .kicker{font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:0.14em;color:var(--accent);margin-bottom:6px;font-weight:600;}
+  h1{font-size:28px;margin:0 0 4px;font-weight:500;line-height:1.15;}
+  .subtitle{color:var(--sub);font-size:14.5px;font-family:-apple-system,Helvetica,Arial,sans-serif;max-width:62ch;line-height:1.5;}
+
+  .panel{display:none;}
+  .panel.is-active{display:block;}
+
+  .settings-row{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 22px;font-family:-apple-system,Helvetica,Arial,sans-serif;}
+  .settings-group{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:10px 14px;flex:1;min-width:220px;}
+  .settings-label{font-size:11px;color:var(--sub);letter-spacing:0.05em;margin-bottom:8px;}
+  .segmented{display:flex;gap:4px;background:var(--bg);border-radius:8px;padding:3px;}
+  .segmented button{flex:1;background:transparent;border:none;color:var(--sub);font-size:12.5px;padding:7px 8px;border-radius:6px;cursor:pointer;font-family:inherit;}
+  .segmented button.is-on{background:var(--accent);color:var(--bg);font-weight:700;}
+  select.fut7-select{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:8px 10px;border-radius:6px;font-size:12.5px;font-family:inherit;}
+
+  .today-hero{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 22px 20px;margin-bottom:22px;}
+  .today-hero .eyebrow{font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:11.5px;color:var(--sub);letter-spacing:0.05em;margin-bottom:4px;}
+  .today-hero h2{font-size:24px;margin:0 0 14px;font-weight:500;}
+  .today-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-family:-apple-system,Helvetica,Arial,sans-serif;margin-bottom:16px;}
+  .stat{background:var(--panel-2);border-radius:8px;padding:10px 12px;}
+  .stat .num{font-size:20px;font-weight:700;color:var(--accent);}
+  .stat .lbl{font-size:11px;color:var(--sub);margin-top:2px;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;}
+  .chip{font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:11.5px;border:1px solid var(--line);color:var(--sub);border-radius:20px;padding:4px 11px;}
+  .next-up{font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:13.5px;color:var(--sub);border-top:1px solid var(--line);padding-top:14px;margin-bottom:14px;}
+  .next-up b{color:var(--text);}
+  .cta-btn{display:inline-block;background:var(--accent);color:var(--bg);border:none;font-family:-apple-system,Helvetica,Arial,sans-serif;font-weight:700;font-size:13.5px;padding:10px 18px;border-radius:8px;cursor:pointer;}
+
+  .week-strip{display:flex;gap:6px;margin:0 0 24px;font-family:-apple-system,Helvetica,Arial,sans-serif;}
+  .week-pill{flex:1;text-align:center;padding:9px 4px;border-radius:8px;border:1px solid var(--line);background:var(--panel);font-size:11.5px;color:var(--sub);cursor:pointer;}
+  .week-pill .pct{display:block;font-size:13.5px;font-weight:700;margin-top:3px;color:var(--text);}
+  .week-pill.is-today{border-color:var(--accent);color:var(--accent);}
+
+  .legend{display:flex;gap:16px;margin:0 0 22px;flex-wrap:wrap;font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12.5px;color:var(--sub);}
+  .legend span{display:flex;align-items:center;gap:6px;}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+
+  .day{border-top:1px solid var(--line);padding:18px 0;scroll-margin-top:60px;}
+  .day.is-today{background:linear-gradient(90deg, rgba(217,119,47,0.06), transparent 60%);}
+  .day-head{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+  .day-name{font-size:19px;font-weight:600;}
+  .day-tag{font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:0.03em;color:var(--accent);border:1px solid var(--accent);border-radius:20px;padding:2px 9px;}
+  .day-tag.rest{color:var(--sub);border-color:var(--line);}
+  .day-today-tag{font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:10.5px;color:var(--bg);background:var(--accent);border-radius:20px;padding:2px 9px;font-weight:700;}
+  .day-score{margin-left:auto;font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;color:var(--sub);}
+
+  .blocks{display:flex;flex-direction:column;gap:2px;}
+  .block-row{display:grid;grid-template-columns:4px 22px 1fr auto;align-items:start;gap:0 10px;border-radius:8px;padding:8px 6px;}
+  .block-row:hover{background:var(--line-soft);}
+  .block-bar{width:4px;align-self:stretch;border-radius:3px;min-height:20px;}
+  .block-check{padding-top:3px;}
+  .block-check input{appearance:none;width:16px;height:16px;border:1.5px solid var(--sub);border-radius:4px;cursor:pointer;position:relative;background:transparent;}
+  .block-check input:checked{background:var(--ok);border-color:var(--ok);}
+  .block-check input:checked::after{content:"";position:absolute;left:4px;top:1px;width:4px;height:8px;border:solid var(--bg);border-width:0 2px 2px 0;transform:rotate(45deg);}
+  .block-main{font-family:-apple-system,Helvetica,Arial,sans-serif;cursor:pointer;}
+  .block-main .label{font-weight:700;color:var(--text);display:block;margin-bottom:2px;font-size:12.5px;}
+  .block-main .txt{color:#c7cbba;font-size:14px;line-height:1.4;}
+  .block-main .meta{color:var(--sub-2);font-size:11.5px;margin-top:2px;}
+  .block-row.is-done .block-main .txt{color:#5c6152;text-decoration:line-through;text-decoration-color:#454a3b;}
+  .block-row.is-done .block-main .label{color:#6c7160;}
+  .expand-hint{color:var(--sub-2);font-size:11px;font-family:-apple-system,Helvetica,Arial,sans-serif;align-self:center;padding-top:4px;}
+  .day-note{font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;color:var(--sub-2);margin-top:8px;padding:8px 10px;background:var(--panel-2);border-radius:6px;}
+
+  .routine-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
+  .routine-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 14px;cursor:pointer;font-family:-apple-system,Helvetica,Arial,sans-serif;}
+  .routine-card:hover{border-color:var(--accent);}
+  .routine-card .rname{font-size:14.5px;font-weight:700;font-family:'Georgia',serif;margin-bottom:4px;}
+  .routine-card .rmeta{font-size:11.5px;color:var(--sub);}
+  .routine-card.is-tbd{opacity:0.6;}
+  .tbd-flag{display:inline-block;font-size:10px;color:var(--tbd);border:1px solid var(--tbd);border-radius:20px;padding:1px 7px;margin-top:6px;}
+  @media (max-width:600px){.routine-grid{grid-template-columns:1fr;}}
+
+  .drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:100;display:none;align-items:flex-end;justify-content:center;}
+  .drawer-overlay.is-open{display:flex;}
+  .drawer{background:var(--panel);border-top:1px solid var(--line);border-radius:16px 16px 0 0;max-width:900px;width:100%;max-height:86vh;overflow-y:auto;padding:22px 20px 32px;}
+  @media (min-width:700px){.drawer-overlay{align-items:center;} .drawer{border-radius:16px;max-height:82vh;}}
+  .drawer-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
+  .drawer-close{background:transparent;border:none;color:var(--sub);font-size:22px;cursor:pointer;line-height:1;padding:0 4px;}
+  .drawer h3{font-size:21px;margin:0 0 2px;font-weight:600;}
+  .drawer .rmeta{font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12.5px;color:var(--sub);margin-bottom:16px;}
+  .exercise{border-top:1px solid var(--line);padding:14px 0;font-family:-apple-system,Helvetica,Arial,sans-serif;}
+  .exercise:first-of-type{border-top:none;}
+  .exercise-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap;}
+  .exercise-head.is-clickable{cursor:pointer;}
+  .exercise-name{font-size:14.5px;font-weight:700;font-family:'Georgia',serif;}
+  .exercise-sets{font-size:12.5px;color:var(--accent);font-weight:600;}
+  .exercise-arrow{display:inline-block;color:var(--sub);transition:transform .15s ease;margin-left:2px;}
+  .exercise-head.is-open .exercise-arrow{transform:rotate(90deg);}
+  .exercise ul{margin:8px 0 0;padding-left:18px;font-size:13px;color:#c7cbba;line-height:1.6;}
+  .exercise ul li::marker{color:var(--sub-2);}
+  .exercise-detail{margin-top:10px;padding:12px 12px 4px;background:var(--panel-2);border-radius:8px;}
+  .ex-block{margin-bottom:12px;}
+  .ex-block b{font-size:11px;letter-spacing:0.05em;color:var(--accent);display:block;margin-bottom:4px;}
+  .ex-block p{margin:0;font-size:13px;color:#c7cbba;line-height:1.5;}
+  .ex-block.ex-avoid b{color:var(--tbd);}
+  .order-note{font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12.5px;color:var(--sub);background:var(--panel-2);border-radius:6px;padding:8px 10px;margin-top:14px;line-height:1.5;}
+  .tbd-note{font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12.5px;color:var(--tbd);border:1px dashed var(--tbd);border-radius:6px;padding:10px 12px;margin-top:6px;}
+
+  .track-box{background:var(--panel-2);border-radius:8px;padding:10px 12px;margin-top:10px;font-family:-apple-system,Helvetica,Arial,sans-serif;}
+  .track-last{font-size:12px;color:var(--sub);margin-bottom:8px;}
+  .track-inputs{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+  .track-inputs input{width:56px;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:6px 7px;border-radius:6px;font-size:13px;text-align:center;font-family:inherit;}
+  .track-inputs .unit{font-size:11px;color:var(--sub-2);}
+  .track-save{background:var(--accent);color:var(--bg);border:none;font-weight:700;font-size:12px;padding:6px 12px;border-radius:6px;cursor:pointer;font-family:inherit;}
+  .track-saved-msg{font-size:11px;color:var(--ok);margin-left:6px;}
+
+  .prog-item{border-top:1px solid var(--line);padding:16px 0;font-family:-apple-system,Helvetica,Arial,sans-serif;}
+  .prog-item:first-of-type{border-top:none;}
+  .prog-item h4{font-size:15px;font-family:'Georgia',serif;margin:0 0 6px;}
+  .prog-steps{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .prog-step{font-size:11.5px;color:var(--sub);border:1px solid var(--line);border-radius:20px;padding:4px 10px;}
+  .prog-item p{font-size:13px;color:#c7cbba;line-height:1.55;margin:6px 0 0;}
+
+  .goals-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px;}
+  .goal-cat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;font-family:-apple-system,Helvetica,Arial,sans-serif;}
+  .goal-cat h4{font-size:13px;color:var(--accent);margin:0 0 10px;letter-spacing:0.03em;}
+  .goal-cat ul{margin:0;padding-left:16px;font-size:12.5px;color:#c7cbba;line-height:1.7;}
+  @media (max-width:700px){.goals-grid{grid-template-columns:1fr;}}
+
+  .rule-item{border-top:1px solid var(--line);}
+  .rule-item:first-of-type{border-top:none;}
+  .rule-q{width:100%;text-align:left;background:transparent;border:none;color:var(--text);font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;padding:14px 4px;cursor:pointer;display:flex;justify-content:space-between;gap:10px;}
+  .rule-q .arrow{color:var(--sub);transition:transform .15s ease;}
+  .rule-item.is-open .rule-q .arrow{transform:rotate(90deg);}
+  .rule-a{display:none;font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:13px;color:#c7cbba;line-height:1.6;padding:0 4px 16px;}
+  .rule-item.is-open .rule-a{display:block;}
+
+  footer{margin-top:30px;padding:20px 4px 0;font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:12px;color:var(--sub-2);}
+  .reset-btn{background:transparent;border:1px solid var(--line);color:var(--sub);font-size:12px;padding:6px 12px;border-radius:6px;cursor:pointer;font-family:inherit;}
+  .reset-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+  h2.section-title{font-size:22px;font-weight:500;margin:0 0 4px;}
+  .section-sub{font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:13.5px;color:var(--sub);margin-bottom:6px;}
+</style>
+</head>
+<body>
+
+<nav class="tabs">
+  <div class="tabs-inner">
+    <button class="tab-btn" data-tab="hoy">HOY</button>
+    <button class="tab-btn" data-tab="semana">SEMANA</button>
+    <button class="tab-btn" data-tab="rutinas">RUTINAS</button>
+    <button class="tab-btn" data-tab="progresion">PROGRESIÓN</button>
+    <button class="tab-btn" data-tab="reglas">REGLAS</button>
+  </div>
+</nav>
+
+<div class="wrap">
+<header>
+  <div class="kicker">TRAINING JOURNAL · 6 MESES</div>
+  <h1>Plan de rendimiento</h1>
+  <div class="subtitle">Miércoles siempre libre de gimnasio. Los horarios de comida son solo referencias de timing. Toca cualquier bloque destacado para ver técnica, series y notas completas.</div>
+</header>
+
+<section class="panel is-active" id="panel-hoy">
+
+  <div class="settings-row">
+    <div class="settings-group">
+      <div class="settings-label">CARGA DE CARDIO</div>
+      <div class="segmented" id="liga-toggle">
+        <button data-val="pre">Pre-ligas</button>
+        <button data-val="activas">Ligas activas</button>
+      </div>
+    </div>
+    <div class="settings-group">
+      <div class="settings-label">FÚTBOL 7 ESTA SEMANA</div>
+      <select class="fut7-select" id="fut7-select">
+        <option value="ninguno">Sin partido</option>
+        <option value="lunes">Lunes</option>
+        <option value="martes">Martes</option>
+        <option value="miercoles">Miércoles</option>
+        <option value="jueves">Jueves</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="today-hero">
+    <div class="eyebrow" id="today-eyebrow">HOY</div>
+    <h2 id="today-title">—</h2>
+    <div class="today-stats">
+      <div class="stat"><div class="num" id="stat-pct">0%</div><div class="lbl">completado</div></div>
+      <div class="stat"><div class="num" id="stat-done">0/0</div><div class="lbl">bloques</div></div>
+      <div class="stat"><div class="num" id="stat-time">—</div><div class="lbl">tiempo pendiente aprox.</div></div>
+    </div>
+    <div class="chips" id="today-chips"></div>
+    <div class="next-up" id="today-next"></div>
+    <button class="cta-btn" id="cta-ver-hoy">Ver rutina de hoy →</button>
+  </div>
+
+  <div class="week-strip" id="week-strip"></div>
+</section>
+
+<section class="panel" id="panel-semana">
+  <h2 class="section-title">Semana</h2>
+  <div class="section-sub">Toca el texto de un bloque para ver el detalle completo. El checkbox solo marca cumplimiento.</div>
+  <div class="legend">
+    <span><span class="dot" style="background:var(--am)"></span>Mañana / universidad</span>
+    <span><span class="dot" style="background:var(--pm)"></span>Tarde</span>
+    <span><span class="dot" style="background:var(--nt)"></span>Noche</span>
+  </div>
+  <div id="days"></div>
+</section>
+
+<section class="panel" id="panel-rutinas">
+  <h2 class="section-title">Biblioteca de rutinas</h2>
+  <div class="section-sub">Consulta cualquier rutina independientemente del día. Lo marcado como "por concretar" no tiene ejercicios definidos todavía.</div>
+  <div class="routine-grid" id="routine-grid"></div>
+</section>
+
+<section class="panel" id="panel-progresion">
+  <h2 class="section-title">Progresión · 6 meses</h2>
+  <div class="section-sub">Solo las progresiones que están realmente definidas. Nada de pesos ni plazos inventados.</div>
+  <div id="progression-list"></div>
+
+  <h2 class="section-title" style="margin-top:34px;">Objetivos</h2>
+  <div class="goals-grid" id="goals-grid"></div>
+</section>
+
+<section class="panel" id="panel-reglas">
+  <h2 class="section-title">Reglas / playbook</h2>
+  <div class="section-sub">Qué hacer cuando el plan choca con la realidad.</div>
+  <div id="rules-list"></div>
+</section>
+
+<footer>
+  <button class="reset-btn" id="reset-week">Reiniciar progreso de esta semana</button>
+  <button class="reset-btn" id="reset-tracking" style="margin-left:8px;">Borrar datos de tracking</button>
+</footer>
+
+</div>
+
+<div class="drawer-overlay" id="drawer-overlay">
+  <div class="drawer" id="drawer">
+    <div class="drawer-head">
+      <div>
+        <h3 id="drawer-title">—</h3>
+        <div class="rmeta" id="drawer-meta"></div>
+      </div>
+      <button class="drawer-close" id="drawer-close">&times;</button>
+    </div>
+    <div id="drawer-body"></div>
+  </div>
+</div>
+
+<script>
+function techniqueCalf(){
+  return [
+    'ROM completo, estiramiento profundo controlado.',
+    '~2 s abajo, nada de rebotes.',
+    'Cerca del fallo manteniendo técnica.',
+    'Progressive overload mediante double progression.',
+    'Regla de disponibilidad: si la máquina está ocupada toda la sesión, mover ±1 día; mantener ~3 exposiciones/semana; no juntar dos sesiones pesadas consecutivas.'
+  ];
+}
+const ROUTINES = {
+
+  'am-block': {
+    name:'Bloque AM', category:'Movilidad / postura', duration:'4–6 min', frequency:'Prácticamente diario',
+    objective:'Mandíbula/postura + abdomen plano.',
+    items:[
+      { name:'Vacuum', sets:'4×10–15 s (inicio)',
+        target:'Control del transverso abdominal (la capa muscular más profunda del abdomen) — busca un abdomen plano por tono, no por quemar grasa.',
+        how:[
+          'Ponte de pie, sentado o a cuatro patas según la fase de progresión (ver abajo) y coloca una mano sobre el abdomen para sentir el movimiento.',
+          'Exhala todo el aire por la boca, vaciando bien los pulmones.',
+          'Con los pulmones vacíos, lleva el ombligo hacia dentro y ligeramente hacia arriba, como si quisieras separarlo del cinturón.',
+          'Mantén la contracción respirando de forma corta y superficial hacia el pecho (respiración torácica) sin soltar el abdomen — esto es lo que lo distingue de un simple "meter tripa".',
+          'Sostén sin ir al esfuerzo máximo: debe notarse controlado, no un temblor por el esfuerzo.',
+          'Suelta completamente entre repeticiones antes de la siguiente — la relajación total es parte del ejercicio.',
+          'Progresión: mes 1 tumbado boca arriba o a cuatro patas (más fácil, gravedad ayuda) → mes 2 a cuatro patas/sentado → mes 3 de pie → meses 4–6, de pie sosteniendo 15–30 s en distintas posiciones (andando, hablando, etc.).'
+        ],
+        avoid:['Buscar "quemar grasa localizada" — el vacuum no hace eso, entrena control muscular.','Contraer al máximo o poner cara de esfuerzo — si tiemblas, estás yendo demasiado fuerte.','Contener la respiración con los pulmones llenos.','Mantenerlo contraído fuera de la serie, todo el día — puede generar tensión innecesaria.','Saltar de fase (p. ej. empezar de pie el mes 1) antes de dominar la anterior con buena sensación de control.']
+      },
+      { name:'Chin tucks', sets:'trabajo breve, 8–12 reps',
+        target:'Musculatura flexora profunda del cuello — mejora la postura de cabeza adelantada.',
+        how:[
+          'Siéntate o ponte de pie con la espalda recta.',
+          'Sin mover el resto del cuerpo, retrae la barbilla hacia atrás en horizontal, como si intentaras hacer "doble papada" mirando al frente.',
+          'Notarás un estiramiento suave en la nuca.',
+          'Mantén 1–2 s y vuelve a la posición neutra con control.'
+        ],
+        avoid:['Empujar la barbilla con las manos.','Inclinar la cabeza hacia abajo en vez de retraerla en horizontal.','Hacerlo rápido tipo "cabeceo" — el valor está en el control, no en la velocidad.']
+      },
+      { name:'Respiración / postura', sets:'recordatorio a lo largo del día',
+        target:'Hábito de respiración nasal y alineación de cabeza/cuello.',
+        how:['Cierra la boca y respira por la nariz en reposo (caminando, estudiando, etc.).','Mantén la cabeza en línea con la columna, sin adelantar la barbilla hacia la pantalla.','Si te descubres respirando por la boca, es la señal para corregir postura y volver a nasal.'],
+        avoid:['Convertirlo en una obsesión constante — es un recordatorio puntual, no una vigilancia permanente.']
+      },
+      { name:'Sonrisa natural', sets:'3×/semana, 1–2 min',
+        target:'Tono de la musculatura facial, práctica ligera integrada en la rutina diaria.',
+        how:['Practica una sonrisa natural (no forzada) mientras te lavas los dientes o te preparas por la mañana.','No hace falta aislar un momento del día para esto.'],
+        avoid:['Convertirlo en otro bloque independiente que compita por tiempo con el resto del plan.']
+      },
+    ]
+  },
+
+  'chest-a': {
+    name:'Pecho A', category:'Torso · empuje', duration:'~70 min', frequency:'Lunes',
+    objective:'Upper chest priority.',
+    orderNote:'No se ejecutan los tres movimientos de pecho seguidos: la sesión alterna Pecho → Hombro → Bíceps → Pecho → Hombro → Bíceps → Pecho para dejar recuperación local entre ejercicios.',
+    items:[
+      { name:'Incline Dumbbell Press', sets:'3×6–10', trackId:'incline-db-press',
+        target:'Porción clavicular (superior) del pectoral — el ejercicio prioritario de la sesión.',
+        how:[
+          'Ajusta el banco a 20–30° de inclinación — compruébalo, no lo dejes "a ojo": más de 30° empieza a robarle trabajo al hombro anterior.',
+          'Siéntate con las mancuernas apoyadas en los muslos, túmbate llevándolas al pecho con una rodilla para impulsarlas.',
+          'Posición inicial: mancuernas a la altura del pecho, codos a ~45–60° respecto al torso (ni pegados al cuerpo ni en cruz a 90°).',
+          'Mete el pecho hacia arriba y hacia fuera con un arco torácico pequeño y natural — no fuerces la zona lumbar para conseguirlo.',
+          'Empuja las mancuernas hacia arriba y ligeramente hacia el centro, sin chocarlas ni bloquear el codo con violencia arriba.',
+          'Baja controlado (2–3 s) hasta un rango cómodo en el hombro, sin buscar el estiramiento máximo a cualquier precio.',
+          'Progressive overload: sube peso o reps de sesión a sesión mientras la técnica se mantenga intacta.'
+        ],
+        avoid:['Inclinar el banco por encima de 30° — desplaza el énfasis del pecho al hombro.','Arquear excesivamente la zona lumbar para ganar rango de movimiento.','Bajar sin control o rebotar la mancuerna en el pecho para "ayudarse".','Codos totalmente pegados al cuerpo (pierde pecho) o en cruz a 90° (estresa el hombro).','Perseguir peso a costa de cortar el recorrido.']
+      },
+      { name:'Low-to-high cable fly', sets:'2–3×10–15',
+        target:'Fibras superiores/internas del pectoral, en tensión continua (sin fase de descanso en el cable como sí ocurre con mancuernas).',
+        how:[
+          'Coloca las poleas en la posición más baja.',
+          'Da un paso adelante, torso ligeramente inclinado, codo con una flexión suave y fija durante todo el movimiento.',
+          'Lleva las manos desde abajo/lateral hacia arriba/centro, como dibujando una "V" invertida frente al pecho.',
+          'Aprieta el pectoral en la parte alta 1 s antes de volver.',
+          'Vuelve controlado, sintiendo el estiramiento en la posición inicial sin perder la tensión del cable.'
+        ],
+        avoid:['Balancear el torso hacia delante/atrás para generar impulso.','Cambiar el ángulo del codo a mitad de movimiento (convierte el ejercicio en otra cosa).','Usar tanto peso que la trayectoria se vuelva recta en vez de diagonal.']
+      },
+      { name:'Pec deck', sets:'2–3×10–15',
+        target:'Aislamiento final del pectoral, cierre de la sesión con la fatiga acumulada de los ejercicios anteriores.',
+        how:[
+          'Ajusta el asiento para que las manijas/almohadillas queden a la altura del pecho, no de los hombros.',
+          'Espalda pegada al respaldo, pecho ligeramente sacado.',
+          'Cierra llevando los codos hacia el centro, apretando el pectoral arriba.',
+          'Vuelve controlando la fase excéntrica (abriendo) sin dejar que el peso "tire" de golpe.'
+        ],
+        avoid:['Rango de apertura excesivo que fuerce la parte delantera del hombro.','Despegar la espalda del respaldo para empujar más.']
+      },
+    ]
+  },
+
+  'chest-b': {
+    name:'Pecho B', category:'Torso · empuje', duration:'~65 min', frequency:'Jueves',
+    objective:'Misma filosofía que Pecho A: incline DB press sigue siendo prioritario.',
+    orderNote:'Alternar con hombro/bíceps igual que en Pecho A.',
+    items:[
+      { name:'Incline Dumbbell Press', sets:'3×8–12', trackId:'incline-db-press',
+        target:'Porción clavicular del pectoral — sigue siendo el ejercicio prioritario, ahora en rango de reps algo más alto.',
+        how:['Misma técnica que en Pecho A: banco 20–30°, codos ~45–60°, arco natural, descenso controlado.','Progressive overload manteniendo la forma — si la técnica se rompe para llegar a 12 reps, es mejor bajar el peso.'],
+        avoid:['Subir el ángulo del banco por encima de 30°.','Sacrificar técnica por llegar al número de reps objetivo.']
+      },
+      { name:'Pec deck', sets:'2–3×10–15',
+        target:'Aislamiento de pectoral.',
+        how:['Manijas a la altura del pecho, cierre apretando arriba, vuelta controlada.'],
+        avoid:['Rango excesivo forzando el hombro.']
+      },
+      { name:'Seated Chest Press', sets:'2×8–12',
+        target:'Empuje horizontal de pectoral, complementario al énfasis superior del incline press.',
+        how:[
+          'Ajusta el asiento para que las manijas queden a la altura media del pecho.',
+          'Espalda y cabeza apoyadas en el respaldo durante todo el movimiento.',
+          'Empuja hacia delante sin bloquear el codo de golpe al final.',
+          'Vuelve controlado hasta sentir un buen estiramiento en el pecho, sin que los hombros se vayan hacia delante.'
+        ],
+        avoid:['Arquear la espalda separándola del respaldo para empujar más peso.','Bloquear el codo con fuerza en cada repetición (estrés articular innecesario).']
+      },
+    ]
+  },
+
+  'shoulders': {
+    name:'Hombros', category:'Torso · accesorio', duration:'~20 min (integrado en días de pecho)', frequency:'3×/semana lateral · 2×/semana posterior',
+    objective:'Prioridad estética: lateral > posterior > anterior.',
+    items:[
+      { name:'Machine lateral raise', sets:'objetivo inicial ~8–10 series directas/semana', trackId:'machine-lateral-raise',
+        target:'Deltoides lateral — la prioridad estética número uno del hombro (da la anchura de hombros).',
+        how:[
+          'Ajusta el asiento para que el eje de la máquina quede alineado con tu hombro.',
+          'Codo con una flexión ligera y constante durante todo el recorrido (no lo vayas cambiando).',
+          'Eleva liderando con el codo, no con la mano, hasta que el brazo quede aproximadamente en línea con el hombro.',
+          'Aprieta arriba 1 s, controla la bajada — no dejes que el peso caiga solo.',
+          'Alternativa si la máquina está ocupada: cable lateral raise unilateral, mismo patrón de movimiento con un cable a la altura de la cadera.',
+          'Progressive overload semana a semana priorizando el control sobre el peso máximo.'
+        ],
+        avoid:['Usar impulso de piernas o balanceo del torso para subir el peso.','Encoger el trapecio (subir el hombro hacia la oreja) para "ayudar" — el movimiento debe salir del deltoides, no del trapecio.','Elegir siempre la alternativa en cable cuando la máquina está libre — es la prioridad, no un sustituto habitual.']
+      },
+      { name:'Reverse pec deck (rear delts)', sets:'~2×/semana · ~6 series directas/semana',
+        target:'Deltoides posterior — aporta profundidad y equilibrio visual al hombro desde atrás.',
+        how:[
+          'Siéntate mirando hacia la máquina (al revés de como se usa para pecho).',
+          'Pecho apoyado en el respaldo, brazos casi extendidos con flexión ligera de codo.',
+          'Abre los brazos en horizontal llevando los codos hacia atrás, apretando entre los omóplatos.',
+          'Controla la vuelta sin dejar que el peso tire de los hombros hacia delante.'
+        ],
+        avoid:['Convertirlo en un ejercicio de espalda alta echando el torso hacia atrás.','Usar tanto peso que el movimiento se quede corto (solo los primeros grados).']
+      },
+      { name:'Front delts', sets:'sin aislamiento directo',
+        target:'—',
+        how:['No se programa ningún ejercicio de aislamiento para deltoides anterior.'],
+        avoid:['Añadir presses frontales o elevaciones frontales extra por iniciativa propia: el deltoides anterior ya recibe suficiente estímulo indirecto con los presses de pecho (incline press, chest press). Añadir más solo suma fatiga sin beneficio estético adicional.']
+      },
+      { name:'Machine shoulder press', sets:'2 series fuertes × 6–10',
+        target:'Deltoides en conjunto (con énfasis anterior/medio) — trabajo secundario, no prioritario.',
+        how:[
+          'Ajusta el asiento para que las manijas queden a la altura de los hombros, no por encima de la cabeza al empezar.',
+          'Empuja hacia arriba sin bloquear el codo de golpe.',
+          'Baja controlado hasta que el codo quede ligeramente por debajo del hombro.',
+          'Solo 2 series pero "fuertes": ve realmente cerca del fallo en esas dos.'
+        ],
+        avoid:['Priorizarlo sobre el lateral raise en tiempo o esfuerzo — el anterior ya llega trabajado, el lateral es la prioridad real.','Arquear la espalda para empujar más peso.']
+      },
+    ]
+  },
+
+  'biceps': { name:'Bíceps', category:'Torso · accesorio', duration:'—', frequency:'Alternado con pecho/hombro', tbd:true, objective:'Rutina habitual, ejercicios por concretar.', items:[] },
+  'back-a': { name:'Espalda A', category:'Torso · tirón', duration:'~70 min', frequency:'Martes', tbd:true, objective:'Rutina habitual, ejercicios por concretar.', items:[] },
+  'back-b': { name:'Espalda B', category:'Torso · tirón', duration:'~70 min', frequency:'Sábado', tbd:true, objective:'Rutina habitual, ejercicios por concretar.', items:[] },
+  'legs': { name:'Pierna', category:'Tren inferior', duration:'~60 min', frequency:'Viernes', tbd:true, objective:'Rutina habitual + tercera exposición lateral/bíceps. Ejercicios de pierna por concretar.', items:[] },
+
+  'calves-1': { name:'Gemelos · sesión 1', category:'Especialización', duration:'~15 min', frequency:'3×/semana (rotativo)', objective:'Pesado, rango bajo de reps.',
+    items:[{ name:'Standing calf raise (Smith)', sets:'4×6–10 pesado', trackId:'standing-calf-smith',
+      target:'Gastrocnemio — el gemelo "grande" que se ve de pie, estímulo pesado y bajo en reps.',
+      how:[
+        'Coloca la barra sobre los trapecios como en una sentadilla, punta de los pies sobre un step o disco, talones al aire.',
+        'Baja el talón todo lo que puedas controladamente, sintiendo el estiramiento profundo del gemelo — este es el punto más importante del ejercicio.',
+        'Pausa ~1 s abajo en el estiramiento.',
+        'Sube hasta ponerte de puntillas al máximo, apretando arriba.',
+        'Baja de nuevo con control, ~2 s, sin dejarte caer.',
+        'Progressive overload mediante double progression: primero sube dentro del rango de reps (6→10), y solo cuando llegues a 10 en todas las series sube el peso y vuelve a empezar en 6.'
+      ],
+      avoid:['Rebotar en la posición de estiramiento para "ayudarte" a subir.','Cortar el recorrido (no bajar del todo) para poder mover más peso.','Ir hasta el fallo total perdiendo la técnica en las últimas reps.','Programar esta sesión y otra sesión pesada de gemelo en días consecutivos.']
+    }]
+  },
+  'calves-2': { name:'Gemelos · sesión 2', category:'Especialización', duration:'~15 min', frequency:'3×/semana (rotativo)', objective:'Volumen medio.',
+    items:[{ name:'Seated calf raise', sets:'4×10–15', trackId:'seated-calf-raise',
+      target:'Sóleo — el gemelo profundo, más activo con la rodilla flexionada (posición sentada).',
+      how:[
+        'Siéntate con los cojines apoyados justo encima de la rodilla (no sobre la rótula).',
+        'Punta de los pies sobre la plataforma, talones al aire.',
+        'Baja el talón con control hasta un estiramiento profundo, pausa breve.',
+        'Sube hasta la máxima elevación, aprieta arriba 1 s.',
+        'Mismo criterio de tempo que en de pie: ~2 s en la bajada, sin rebotes.'
+      ],
+      avoid:['Rebotes y cortes de rango.','Colocar el cojín sobre la rótula en vez de encima del muslo — molesta e impide el rango completo.']
+    }]
+  },
+  'calves-3': { name:'Gemelos · sesión 3', category:'Especialización', duration:'~15 min', frequency:'3×/semana (rotativo)', objective:'Alto volumen.',
+    items:[{ name:'Standing calf raise (Smith)', sets:'3–4×12–20', trackId:'standing-calf-smith',
+      target:'Gastrocnemio — refuerzo del estímulo semanal con más reps y algo menos de peso que la sesión 1.',
+      how:['Misma técnica exacta que la sesión 1 (estiramiento profundo, pausa, subida completa, bajada controlada), simplemente con más repeticiones y menos carga.'],
+      avoid:['Perder la técnica (cortar rango, rebotar) solo porque las reps son más altas y "cansa antes".']
+    }]
+  },
+
+  'abs-a': { name:'Abs A', category:'Core', duration:'~20 min', frequency:'3×/semana (rotativo)', objective:'Hipertrofia + fuerza/control.', items:[
+      { name:'Machine crunch', sets:'3×8–12', trackId:'machine-crunch',
+        target:'Recto abdominal — el ejercicio principal de hipertrofia de abs del plan.',
+        how:[
+          'Ajusta el asiento para que el eje de giro de la máquina coincida con tu ombligo/cintura, no con el pecho.',
+          'Agarra las manijas solo como apoyo ligero, no para tirar.',
+          'Flexiona el tronco de verdad: imagina que acercas las costillas inferiores hacia la pelvis, curvando la columna.',
+          'Aprieta el abdomen 1 s en la posición de máxima flexión.',
+          'Vuelve controlado sin perder la tensión abdominal hasta el final del recorrido.',
+          'Progressive overload: primero sube reps dentro del rango (8→12), luego sube peso y vuelve a 8.'
+        ],
+        avoid:['Tirar de la palanca con brazos/hombros en vez de flexionar el tronco — así trabajas brazos, no abdomen.','Usar impulso balanceándote hacia atrás y adelante.','Ajustar el eje de la máquina a la altura del pecho — descoloca por completo el ejercicio.']
+      },
+      { name:"Captain's chair", sets:'2×8–15', trackId:'captains-chair',
+        target:'Abdomen inferior y control de la báscula pélvica (pelvic curl).',
+        how:[
+          'Apoya antebrazos y espalda en el respaldo, agarre firme en las asas.',
+          'Progresión — nivel 1 (knee raise): sube las rodillas hacia el pecho con control.',
+          'Progresión — nivel 2 (knee raise + pelvic curl): en la parte alta, además de subir las rodillas, báscula la pelvis hacia atrás (como enroscando la cadera), sintiendo que el abdomen inferior se acorta un poco más.',
+          'Progresión — nivel 3 (straight-leg raise): mismo patrón con las piernas más estiradas.',
+          'Progresión — nivel 4 (high straight-leg raise): piernas estiradas, subiendo lo más alto posible manteniendo el control.',
+          'Baja siempre controlado, sin dejar que las piernas caigan de golpe.'
+        ],
+        avoid:['Quedarte solo en la flexión de cadera sin la báscula pélvica arriba — es precisamente lo que hace que el ejercicio trabaje el abdomen y no solo el flexor de cadera.','Balancear el cuerpo con impulso para subir las piernas.','Saltar directamente a straight-leg raise sin dominar antes el pelvic curl con rodillas flexionadas.']
+      },
+  ]},
+  'abs-b': { name:'Abs B', category:'Core', duration:'~20 min', frequency:'3×/semana (rotativo)', objective:'Hipertrofia + fuerza/control.', items:[
+      { name:'Ab wheel / dragon-flag progression', sets:'3 sets', trackId:'dragon-flag',
+        target:'Core anti-extensión (resistir que la zona lumbar se arquee bajo carga) — no busca hipertrofia directa de oblicuos.',
+        how:[
+          'Ab wheel como base inicial: de rodillas, rueda hacia delante manteniendo el abdomen apretado y la zona lumbar sin hundirse, hasta donde puedas controlar la vuelta.',
+          'Progresión hacia dragon flag: tuck/bent knee (rodillas flexionadas hacia el pecho, controlando la bajada) → negatives (solo la fase de bajada controlada desde arriba, sin subir tú solo) → advanced tuck / one-leg (una pierna estirada, otra flexionada) → full negatives (piernas estiradas, solo bajada) → clean dragon flag (subida y bajada completas con piernas estiradas).',
+          'En cualquier variante: el cuerpo se mueve como un bloque rígido desde los hombros hasta los pies/rodillas — no se dobla por la cintura.',
+          'Una dragon flag limpia hacia el mes 6 puede ser un KPI orientativo, no una garantía — depende de tu punto de partida.'
+        ],
+        avoid:['Saltar pasos de la progresión antes de controlar bien el anterior (p. ej. intentar negatives sin dominar el tuck).','Dejar que la zona lumbar se arquee o hunda durante el movimiento — es la señal de que el nivel es demasiado avanzado todavía.','Buscar hipertrofia pesada de oblicuos con este ejercicio: no es su función.']
+      },
+      { name:'Machine crunch', sets:'2×10–15', trackId:'machine-crunch',
+        target:'Recto abdominal — mismo ejercicio que en Abs A, aquí en rango de reps más alto.',
+        how:['Misma técnica que en Abs A: eje alineado con la cintura, flexión real del tronco, aprieta arriba, vuelve controlado.'],
+        avoid:['Tirar con los brazos en vez de flexionar el tronco.']
+      },
+  ]},
+  'abs-c': { name:'Abs C', category:'Core', duration:'~20 min', frequency:'3×/semana (rotativo)', objective:'Hipertrofia + fuerza/control.', items:[
+      { name:"Captain's chair", sets:'3×8–15', trackId:'captains-chair',
+        target:'Abdomen inferior + control pélvico.',
+        how:['Misma progresión que en Abs A: knee raise → knee raise + pelvic curl → straight-leg raise → high straight-leg raise.','El pelvic curl arriba sigue siendo la parte que hace el ejercicio efectivo.'],
+        avoid:['Omitir el pelvic curl arriba.','Usar impulso.']
+      },
+      { name:'Machine crunch', sets:'2×8–15', trackId:'machine-crunch',
+        target:'Recto abdominal — hipertrofia.',
+        how:['Flexión real del tronco, eje de la máquina en la cintura, apretar arriba.'],
+        avoid:['Tirar con los brazos.']
+      },
+  ]},
+
+  'serratus': { name:'Serrato', category:'Torso · accesorio', duration:'~8 min', frequency:'2×/semana · ~6 series directas/semana', objective:'Un solo ejercicio directo.', items:[
+      { name:'Cable serratus punch', sets:'3×12–20 por lado',
+        target:'Serrato anterior — el músculo que da esa apariencia "acorazada" bajo la axila/costillas.',
+        how:[
+          'Coloca la polea a la altura del hombro, de pie de lado a la máquina.',
+          'Brazo prácticamente extendido sujetando el asa, como si fueras a dar un puñetazo lento hacia delante.',
+          'El movimiento sale de la escápula: al final del recorrido, empuja el hombro hacia delante (protracción escapular) como si quisieras alejar el puño un poco más sin flexionar el codo.',
+          'Vuelve controlado sintiendo que el omóplato se acerca de nuevo a la columna.'
+        ],
+        avoid:['Rotar el torso para ayudarse a llegar más lejos — el movimiento es solo de la escápula.','Flexionar el codo para ganar rango — el "punch" final se hace con el hombro, no con el brazo.','Usar tanto peso que no se sienta el movimiento escapular final.']
+      }
+  ]},
+
+  'movement-a': { name:'Movimiento A', category:'Movilidad', duration:'~12–15 min', frequency:'Martes (post-gym)', objective:'Pelvis + abdomen plano + flexibilidad + cadena posterior.',
+    items:[
+      { name:'90/90 breathing', sets:'2×5 respiraciones',
+        target:'Control respiratorio diafragmático y posición pélvica neutra — la base de todo el trabajo de core.',
+        how:[
+          'Tumbado boca arriba, piernas apoyadas en una silla o pared con cadera y rodilla a 90°.',
+          'Zona lumbar en contacto con el suelo durante toda la respiración.',
+          'Inhala por la nariz llevando el aire hacia las costillas bajas y los laterales (no hacia el pecho alto).',
+          'Exhala largo y completo por la boca, notando cómo el abdomen y la pelvis se asientan un poco más contra el suelo.'
+        ],
+        avoid:['Dejar que la zona lumbar se despegue del suelo al inhalar — es la señal de que estás respirando "hacia arriba" en vez de hacia los laterales.','Respiraciones cortas y rápidas — el valor está en la respiración lenta y completa.']
+      },
+      { name:'Dead bug', sets:'2×8/lado',
+        target:'Control lumbopélvico y core anti-extensión (mismo principio que el ab wheel, pero en versión suave).',
+        how:[
+          'Tumbado boca arriba, brazos hacia el techo, cadera y rodillas a 90°.',
+          'Presiona la zona lumbar contra el suelo antes de empezar y mantenla así todo el ejercicio.',
+          'Extiende brazo y pierna contrarios a la vez, bajándolos hacia el suelo con control, sin que la espalda baja se despegue.',
+          'Vuelve a la posición inicial y repite con el lado contrario.'
+        ],
+        avoid:['Dejar que la zona lumbar se arquee o despegue del suelo al extender la pierna — si pasa, no bajes tanto el brazo/pierna.','Ir rápido: el ejercicio es de control, no de velocidad.']
+      },
+      { name:'Hamstring stretch', sets:'2×30–45 s/lado',
+        target:'Flexibilidad de isquiotibiales (parte posterior del muslo).',
+        how:['Puedes hacerlo tumbado (pierna elevada con banda/toalla) o de pie apoyando el talón adelantado.','Mantén la espalda razonablemente recta, la flexión viene de la cadera, no de curvar la columna.','Estira hasta sentir tensión clara pero tolerable, mantén respirando.'],
+        avoid:['Forzar hasta dolor agudo — especialmente en el isquio proximal, cerca del glúteo, donde puede haber tensión residual tolerable tras trabajar femoral en pierna. Ahí progresa poco a poco y nunca fuerces con la filosofía de "cuanto más tire, mejor".','Curvar la espalda para "llegar más lejos" con las manos.']
+      },
+      { name:'Couch / hip-flexor stretch', sets:'2×30–45 s/lado',
+        target:'Flexibilidad de flexores de cadera (psoas/recto femoral) — clave para reducir la anteversión pélvica.',
+        how:['Rodilla trasera apoyada en el suelo o contra un sofá, pierna delantera en zancada.','Aprieta el glúteo del lado que estiras y lleva la pelvis ligeramente en retroversión (como "meter la cadera hacia dentro") para maximizar el estiramiento.','Mantén el torso vertical.'],
+        avoid:['Arquear la zona lumbar para compensar y "sentir menos" el estiramiento — así se pierde el efecto real.']
+      },
+      { name:'Calf stretch', sets:'30–45 s/lado',
+        target:'Flexibilidad de gemelo/sóleo.',
+        how:['Manos apoyadas en la pared, pierna a estirar atrás con el talón firme en el suelo.','Inclínate hacia la pared manteniendo la pierna trasera extendida (gemelo) y luego repite con la rodilla algo flexionada (sóleo).'],
+        avoid:['Levantar el talón del suelo para "llegar más lejos" — anula el estiramiento.','Rebotar en la posición final.']
+      },
+    ],
+    tbdNote:'Nota isquios: tensión residual tolerable, especialmente en isquio proximal bajo el glúteo tras trabajar femoral. Estirar progresivamente, tensión tolerable, nunca forzar dolor.'
+  },
+  'movement-b': { name:'Movimiento B', category:'Movilidad', duration:'~12–15 min', frequency:'Viernes (post-pierna)', objective:'Lumbar + control lumbopélvico + cadera + aductores + flexibilidad.',
+    items:[
+      { name:'Bird dog', sets:'2×8/lado',
+        target:'Control lumbopélvico y estabilidad anti-rotación de la columna.',
+        how:['A cuatro patas, manos bajo hombros, rodillas bajo cadera.','Activa el core suavemente (como si te fueran a dar un golpe en el abdomen) antes de moverte.','Extiende brazo y pierna contrarios manteniendo la espalda plana, sin que la cadera rote hacia un lado.','Mantén 1–2 s en la posición extendida y vuelve con control.'],
+        avoid:['Rotar la cadera o el torso al extender — señal de que vas demasiado rápido o demasiado lejos.','Arquear la zona lumbar al levantar la pierna.']
+      },
+      { name:'Side plank', sets:'2×30–45 s/lado',
+        target:'Oblicuos y estabilidad lateral del tronco — complementa el trabajo anti-extensión del ab wheel/dragon flag.',
+        how:['Apoyo en antebrazo, codo bajo el hombro, pies apilados o uno delante del otro para más base.','Eleva la cadera del suelo formando una línea recta de tobillos a hombros.','Mantén la cadera arriba sin que caiga durante toda la serie.'],
+        avoid:['Dejar caer la cadera hacia el suelo — reduce mucho el trabajo real.','Rotar el torso hacia delante o atrás.']
+      },
+      { name:'Open books', sets:'2×8/lado',
+        target:'Movilidad torácica en rotación — ayuda a compensar posturas sentado prolongadas.',
+        how:['Tumbado de lado, rodillas flexionadas a 90°, brazos estirados al frente uno sobre otro.','Rota el torso y el brazo superior abriendo hacia el lado contrario, siguiendo la mano con la mirada.','Mantén las rodillas pegadas entre sí durante toda la rotación.'],
+        avoid:['Dejar que las rodillas se separen o giren — así el movimiento se escapa de la cadera en vez de venir del torso.','Forzar el rango con impulso brusco.']
+      },
+      { name:'Adductor / frog / straddle stretch', sets:'2×30–45 s',
+        target:'Flexibilidad de aductores (parte interna del muslo).',
+        how:['Elige la variante frog (a cuatro patas, rodillas abiertas) o straddle (sentado, piernas abiertas) según comodidad.','Mantén la espalda razonablemente neutra y desplaza el peso hacia delante/abajo con control.'],
+        avoid:['Forzar hasta dolor agudo o "pinchazo" en la ingle — ahí para y reduce el rango.']
+      },
+      { name:'90/90 hip rotations / stretch', sets:'—',
+        target:'Movilidad rotacional de cadera (rotación interna/externa).',
+        how:['Sentado en el suelo, una pierna flexionada delante a 90°, la otra flexionada al lado a 90°.','Rota de una posición a la otra pasando por el centro con control, sin apoyarte con las manos si puedes evitarlo.'],
+        avoid:['Forzar el rango si notas pinzamiento o molestia en la articulación de la cadera — reduce el rango en vez de forzar.']
+      },
+      { name:'Hip hinge contra pared', sets:'2×10 (inicial)',
+        target:'Patrón de bisagra de cadera — base técnica para cualquier ejercicio de pierna/isquios en el futuro.',
+        how:['De pie, espalda cerca de una pared (unos 10–15 cm), pies a la anchura de cadera.','Flexiona la cadera llevando los glúteos hacia atrás hasta tocar la pared, manteniendo la espalda neutra y las rodillas con flexión mínima.','Vuelve a la posición de pie llevando la cadera hacia delante, no arqueando la zona lumbar.'],
+        avoid:['Flexionar la columna en vez de la cadera — el movimiento debe sentirse en isquios/glúteo, no en la zona lumbar.','Doblar demasiado las rodillas convirtiéndolo en una sentadilla.'],
+      },
+    ]
+  },
+
+  'pre-leg-mobility': { name:'Pre-leg mobility', category:'Movilidad', duration:'4–5 min', frequency:'Antes de pierna (viernes)', objective:'Preparación articular específica, distinta de las sesiones de flexibilidad estática.',
+    items:[
+      { name:'Leg swings frontales', sets:'10–15/lado',
+        target:'Movilidad dinámica de cadera en el plano de flexión/extensión — prepara la cadera para sentadilla/zancadas.',
+        how:['Apóyate en una pared o barra para mantener el equilibrio.','Balancea la pierna adelante y atrás con un rango cómodo, dejando que aumente progresivamente con las repeticiones.','Mantén el torso estable, sin balancearte con la pierna.'],
+        avoid:['Balanceo descontrolado con impulso excesivo desde el primer intento — empieza con rango moderado.']
+      },
+      { name:'Leg swings laterales', sets:'10–15/lado',
+        target:'Movilidad dinámica de cadera en el plano lateral (abducción/aducción).',
+        how:['Misma base de apoyo que el anterior.','Balancea la pierna de un lado a otro por delante del cuerpo, con control.'],
+        avoid:['Rotar la cadera o el torso para "ayudar" a ganar rango — el movimiento debe quedarse en el plano lateral.']
+      },
+      { name:'Adductor rock-back', sets:'8–10/lado',
+        target:'Movilidad de aductores en carga dinámica — prepara la cadera para el trabajo de pierna.',
+        how:['Postura amplia, una rodilla flexionada al lado y la otra pierna estirada al lado contrario.','Desplaza el peso del cuerpo hacia atrás sobre la pierna estirada, sintiendo el estiramiento del aductor de esa pierna.','Vuelve al centro y repite hacia el otro lado.'],
+        avoid:['Forzar hasta notar dolor agudo o "tirón" en la ingle.']
+      },
+      { name:'Deep / prying squat', sets:'30–45 s',
+        target:'Movilidad de tobillo y cadera en posición de sentadilla profunda.',
+        how:['Baja a una sentadilla profunda con los talones apoyados en el suelo.','Coloca los codos por dentro de las rodillas y empuja suavemente hacia fuera ("prying"), meciéndote ligeramente para ganar rango.'],
+        avoid:['Perder el apoyo del talón en el suelo — si se levanta, sube un poco la profundidad hasta poder mantenerlo.']
+      },
+    ]
+  },
+
+  'pelvic-floor': { name:'Suelo pélvico + meditación', category:'Recuperación', duration:'~12–15 min', frequency:'3×/semana (lunes, miércoles, domingo)', objective:'Contracción + relajación + coordinación, orientado a performance sexual — no solo fortalecer.',
+    items:[
+      { name:'Respiración diafragmática', sets:'unos 2–3 min antes de empezar',
+        target:'Preparar el suelo pélvico y bajar la activación general antes de los kegels.',
+        how:['Tumbado o sentado cómodo, una mano en el pecho y otra en el abdomen.','Respira lento hacia el abdomen/costillas bajas — la mano del abdomen debe moverse más que la del pecho.','Exhala completo y despacio, notando cómo el suelo pélvico se relaja de forma natural con la exhalación.'],
+        avoid:['Respiración torácica superficial (solo pecho) — no prepara al suelo pélvico igual de bien.']
+      },
+      { name:'Kegels moderados', sets:'~8 reps · 3–5 s contracción · 5–10 s relajación completa',
+        target:'Contracción + relajación + coordinación del suelo pélvico — el objetivo no es solo ganar fuerza, sino aprender a contraer Y a soltar bien, algo clave para el control durante la actividad sexual.',
+        how:[
+          'Identifica el músculo contrayendo como si quisieras cortar el pis a mitad de chorro — pero esto es solo para identificarlo, no la forma de entrenar (ver abajo).',
+          'Contrae de forma moderada, no al máximo esfuerzo, durante 3–5 s.',
+          'Suelta completamente durante 5–10 s antes de la siguiente — la relajación total es tan importante como la contracción.',
+          'Repite ~8 veces, manteniendo el resto del cuerpo relajado (glúteos, abdomen, muslos) para aislar bien el suelo pélvico.'
+        ],
+        avoid:['Entrenar interrumpiendo repetidamente el flujo de orina real — solo sirve para identificar el músculo una vez, no como método de entrenamiento habitual.','Contraer al máximo esfuerzo en cada repetición — así se entrena tensión, no coordinación.','Saltarte la relajación completa entre repeticiones.','Tensar glúteos, abdomen o muslos en vez del suelo pélvico.']
+      },
+      { name:'Cierre', sets:'~5 respiraciones centradas en relajación / gentle reverse Kegel',
+        target:'Terminar la sesión en un estado de relajación del suelo pélvico, no de tensión residual.',
+        how:['5 respiraciones lentas, dejando que con cada exhalación el suelo pélvico se suelte un poco más de lo habitual (gentle reverse Kegel).','No fuerces el "reverse" — es soltar, no empujar hacia abajo activamente.'],
+        avoid:['Terminar la sesión justo después de una contracción, sin esta fase de cierre.']
+      },
+      { name:'Meditación', sets:'5–8 min',
+        target:'Cierre de la sesión y regulación general del sistema nervioso.',
+        how:['Siéntate o túmbate cómodo, cierra los ojos si te ayuda.','Lleva la atención a la respiración, sin intentar cambiarla.','Cuando notes que la mente se va a otro pensamiento, vuelve suavemente la atención a la respiración.'],
+        avoid:['Forzar la concentración o frustrarte cuando la mente divague — es normal y parte del proceso, simplemente vuelve a empezar.']
+      },
+    ],
+    tbdNote:'No entrenar interrumpiendo repetidamente el flujo de orina. El resto de días: solo meditación 5–10 min.'
+  },
+
+  'meditation-only': { name:'Meditación (días sin suelo pélvico)', category:'Recuperación', duration:'5–10 min', frequency:'Resto de días', objective:'Mantenimiento ligero — versión corta sin el bloque de suelo pélvico.',
+    items:[
+      { name:'Meditación breve', sets:'5–10 min',
+        target:'Bajar la activación acumulada del día, mantenimiento del hábito.',
+        how:['Siéntate o túmbate en un sitio tranquilo.','Cierra los ojos y lleva la atención a la respiración — nota el aire entrando y saliendo, sin forzar el ritmo.','Cuando la mente divague (pasará muchas veces), vuelve a la respiración sin juzgarte.','Termina abriendo los ojos despacio, sin levantarte de golpe.'],
+        avoid:['Saltarte la sesión "porque hoy no hace falta" cuando el día ha sido especialmente cargado — es justo cuando más ayuda.','Usarlo como excusa para mirar el móvil "un momento" a mitad de la meditación.']
+      }
+    ]
+  },
+
+  'excitation-control': { name:'Control de excitación', category:'Recuperación', duration:'~15–20 min', frequency:'Domingo ~18:30 (base) · martes opcional si no hay fútbol 7', objective:'Contenido educativo/discreto.', items:[
+      { name:'Protocolo', sets:'—',
+        target:'Práctica de reconocimiento y regulación de la excitación — contenido educativo, no gráfico.',
+        how:[
+          'Usa una escala subjetiva de excitación del 1 al 10, donde 10 es el punto de no retorno.',
+          'El objetivo es aprender a identificar la sensación de ~6–7/10, con margen de reacción antes del punto de no retorno.',
+          'Al notar que llegas ahí: reduce o pausa el estímulo, haz varias respiraciones lentas, y relaja conscientemente el abdomen y el suelo pélvico (que tienden a tensarse con la excitación alta).',
+          'Continúa solo cuando la sensación haya bajado con claridad, no solo un poco.'
+        ],
+        avoid:['Esperar hasta niveles muy altos (8–10) antes de intervenir — para que la técnica funcione, la señal hay que cogerla pronto, en el 6–7.','Tensar más el abdomen/suelo pélvico en vez de relajarlo al notar la excitación subir — es contraintuitivo pero la relajación es la herramienta, no la tensión.']
+      }
+  ]},
+
+  'zone2': { name:'Cardio Zone 2', category:'Cardio', duration:'35–45 min', frequency:'Miércoles y domingo AM — solo en modo pre-ligas',
+    objective:'Base aeróbica y salud cardiovascular general. Se retira al empezar las ligas porque los 3 estímulos de fútbol/futsal ya cubren este trabajo — no se acumula con ellos.',
+    items:[
+      { name:'¿Qué es Zone 2?', sets:'concepto',
+        target:'Entrenar el sistema aeróbico de baja intensidad: mejora la capacidad del cuerpo de usar oxígeno y grasa como combustible, sube la eficiencia cardiovascular, y ayuda a la recuperación general — sin añadir fatiga que reste al gimnasio.',
+        how:[
+          'Es la intensidad más baja de las "zonas" de entrenamiento cardiovascular: aproximadamente 60–70% de tu frecuencia cardíaca máxima estimada.',
+          'Estimación orientativa de FC máxima: 220 − tu edad (es una fórmula genérica, no un dato médico exacto, pero sirve como referencia de partida).',
+          'Test del habla ("talk test"): a esta intensidad debes poder mantener una conversación con frases completas, notando que respiras más que en reposo pero sin quedarte sin aire para hablar.',
+          'RPE (esfuerzo percibido) orientativo: 3–4 sobre 10 — "cómodo mantenido", no "moderado" ni "duro".',
+          'Se hace en continuo (sin intervalos ni sprints) durante los 35–45 min completos.'
+        ],
+        avoid:['Confundirlo con "cardio suave cualquiera" sin prestar atención a la intensidad — si no puedes hablar con frases completas, ya no es Zone 2.','Subir el ritmo poco a poco durante la sesión hasta perder el aliento — es un error muy común, hay que vigilar la intensidad activamente.']
+      },
+      { name:'Qué modalidades sirven', sets:'elige una',
+        target:'Cualquier actividad cíclica y continua que te permita sostener la intensidad de Zone 2 sirve — lo que importa es la intensidad, no la máquina concreta.',
+        how:[
+          'Caminar rápido o caminar en incline (cinta inclinada 8–15%) — muy accesible y fácil de dosificar.',
+          'Bici estática o elíptica a ritmo constante.',
+          'Remo (máquina) a ritmo suave y continuo.',
+          'Trote muy suave, solo si tu ritmo de trote natural entra dentro de la intensidad de conversación — si no, mejor caminar rápido o incline.',
+          'Nadar suave, si tienes acceso a piscina.',
+          'Elige la que mejor encaje con tu horario y disponibilidad de esa semana — puedes rotar entre ellas.'
+        ],
+        avoid:['Elegir una modalidad y luego hacerla a una intensidad que no es realmente Zone 2 (p. ej. trotar cuando tu ritmo natural de trote ya es zona 3–4).','Convertir la sesión en intervalos o sprints — eso es otro tipo de entrenamiento, no Zone 2.']
+      },
+      { name:'Cómo mantener la intensidad', sets:'durante la sesión',
+        target:'Que las 35–45 min se queden realmente en Zone 2 de principio a fin.',
+        how:[
+          'Si tienes pulsómetro: mantente en el 60–70% de tu FC máx estimada.',
+          'Si no tienes pulsómetro: usa el talk test cada 5–10 min — si ya no puedes hablar con frases completas, baja el ritmo.',
+          'Respiración preferentemente nasal si el ritmo lo permite; si te ves obligado a respirar por la boca de forma constante, es señal de bajar un poco la intensidad.',
+          'Es normal que al principio de la sesión cueste un poco más "encontrar" el ritmo — los primeros 5 min pueden ir algo más suaves mientras el cuerpo entra en calor.'
+        ],
+        avoid:['Mirar el reloj/velocidad en vez de la sensación — sobre todo si cambias de modalidad, la referencia real es el talk test/RPE, no un número fijo de velocidad.','Hacerlo en ayunas si te deja sin energía para el resto del día — no es un requisito de la sesión, solo una opción si te sienta bien.']
+      },
+    ]
+  },
+
+};
+
+const PROGRESSION = [
+  { title:'Vacuum', steps:['Mes 1: tumbado/cuadrupedia','Mes 2: sentado','Mes 3: de pie','Meses 4–6: 15–30 s, mayor control'], note:'' },
+  { title:'Dragon flag', steps:['Regresiones','Negatives','Variantes avanzadas','Full clean (si se consigue)'], note:'Objetivo hacia el mes 6, no garantizado.' },
+  { title:'Gemelos', steps:['Double progression continua'], note:'Reps → peso, manteniendo técnica y ROM completo.' },
+  { title:'Lateral delts', steps:['Partir de ~8–10 series directas/semana','Progresar solo si recuperación y rendimiento lo permiten'], note:'' },
+  { title:'Incline DB Press', steps:['Progressive overload manteniendo técnica y ángulo 20–30°'], note:'' },
+  { title:'Machine crunch', steps:['Aumentar reps primero','Después aumentar carga'], note:'' },
+  { title:'Flexibilidad', steps:['Aumentar ROM gradualmente'], note:'Sin perseguir dolor.' },
+];
+
+const GOALS = {
+  'Physique': ['Mayor definición','Upper chest','Deltoides laterales','Gemelos','Abs visibles','Abdomen relajado más plano'],
+  'Movement': ['Mejor flexibilidad de tren inferior','Menos sensación de rigidez','Mejor control costillas–pelvis','Mejor hip hinge'],
+  'Skills': ['Progresión hacia dragon flag','Vacuum de pie controlado','Mejor control/relajación del suelo pélvico'],
+};
+
+const RULES = [
+  { q:'Una máquina accesoria (ej. gemelos) está ocupada toda la sesión', a:'Mover el ejercicio al día siguiente; ±1 día no importa. Intentar conservar ~3 exposiciones semanales. No juntar dos sesiones completas pesadas de gemelo consecutivas — si al día siguiente ya tocaba otro trabajo de gemelo, priorizar uno y desplazar el otro 1–2 días. Filosofía similar para laterales, serrato y abs.' },
+  { q:'Un ejercicio prioritario/grande está ocupado', a:'Buscar primero una alternativa razonable antes que esperar o saltárselo.' },
+  { q:'El fútbol 7 cambia de día', a:'Selecciona el nuevo día en el toggle de arriba — la agenda de martes/miércoles y las notas de lunes/jueves se adaptan automáticamente.' },
+  { q:'Miércoles tiene dos partidos (futsal + posible fútbol 7)', a:'Miércoles = fútbol + recuperación. Nada de Zone 2, nada de bloques físicos adicionales innecesarios. Nunca gimnasio.' },
+  { q:'Estoy muy cargado de piernas', a:'Reducir volumen de pierna/gemelo antes que eliminar sesiones completas. Ver principio general de fatiga.' },
+  { q:'Tengo poco tiempo en el gimnasio', a:'Si cae fútbol 7 lunes o jueves: mantener torso pero reducir la sesión a ~50–60 min y eliminar accesorios prescindibles si hace falta.' },
+  { q:'Semana con muchas applications', a:'Proteger sueño y entrenamientos prioritarios; las applications son el bloque más flexible para comprimir.' },
+  { q:'Dormí poco', a:'Principio general de fatiga: 1) proteger sueño, 2) reducir accesorios, 3) reducir volumen de pierna/gemelo, 4) solo después plantearse eliminar una sesión completa. No sacrificar sueño para "cumplir" el planning.' },
+  { q:'Todavía no han empezado las ligas', a:'Modo "Pre-ligas": Zone 2 miércoles y domingo AM (35–45 min). Al activar "Ligas activas" el cardio programado se retira y se sustituye por los 3 estímulos de fútbol/futsal.' },
+];
+
+function buildWeek(settings){
+  const { ligaMode, fut7Day } = settings;
+  const fut7Note = (day) => fut7Day === day;
+  const days = [];
+
+  days.push({ key:'lunes', jsDay:1, name:'Lunes', tag:'Pecho A', rest:false,
+    note: fut7Note('lunes') ? 'Fútbol 7 hoy: sesión de torso ~50–60 min, elimina accesorios prescindibles si hace falta.' : '',
+    blocks:[
+      plain('am','06:40 – 07:50','Levantar → bloque AM 4 min → desayuno','am-block'),
+      plain('am','08:00 – 15:00','Universidad'),
+      plain('pm','15:15 – 16:15','Comida'),
+      routineBlock('pm','16:15 – 17:25','chest-a'),
+      plain('pm','18:00 – 19:30','Applications'),
+      plain('nt','20:30','Cena'),
+      routineBlock('nt','22:10 – 23:00','pelvic-floor'),
+    ]
+  });
+
+  const martesNoche = fut7Note('martes')
+    ? [ plain('nt','~17:45 – 18:00','Comida (antes de fútbol 7)'), plain('nt','~20:00','Fútbol 7') ]
+    : [ routineBlock('nt','Noche','excitation-control'), routineBlock('nt','Noche','meditation-only') ];
+  days.push({ key:'martes', jsDay:2, name:'Martes', tag:'Espalda A', rest:false,
+    note:'Control de excitación (martes) solo si no hay fútbol 7 esa noche.',
+    blocks:[
+      plain('am','~07:15 – 08:00','Levantar → bloque AM → desayuno','am-block'),
+      routineBlock('am','08:00 – 09:10','back-a'),
+      routineBlock('am','09:10 – 09:25','movement-a'),
+      plain('am','10:30 – 15:00','Universidad'),
+      plain('pm','15:15','Comida'),
+      plain('pm','17:00','Psicóloga'),
+      ...martesNoche,
+    ]
+  });
+
+  const miercolesMid = ligaMode === 'activas'
+    ? [ plain('pm','13:00 – 14:00','Futsal universidad → comida') ]
+    : [ routineBlock('am','07:00 – 07:45','zone2'), plain('pm','13:00','Comida') ];
+  const miercolesNoche = fut7Note('miercoles')
+    ? [ plain('nt','~20:00','Posible fútbol 7') ]
+    : [ routineBlock('nt','Noche','pelvic-floor') ];
+  days.push({ key:'miercoles', jsDay:3, name:'Miércoles', tag:'Sin gimnasio', rest:true,
+    note:'Nunca gimnasio. Si hay dos partidos el mismo día: fútbol + recuperación, sin bloques físicos extra.',
+    blocks:[
+      plain('am','06:40 – 08:00','Bloque AM → desayuno','am-block'),
+      plain('am','08:00 – 12:30','Universidad'),
+      ...miercolesMid,
+      plain('pm','16:30 – 18:00','Applications (slot flexible)'),
+      ...miercolesNoche,
+    ]
+  });
+
+  days.push({ key:'jueves', jsDay:4, name:'Jueves', tag:'Pecho B', rest:false,
+    note: fut7Note('jueves') ? 'Fútbol 7 hoy: sesión de torso ~50–60 min, elimina accesorios prescindibles si hace falta.' : '',
+    blocks:[
+      plain('am','06:40 – 08:00','Bloque AM → desayuno','am-block'),
+      plain('am','08:00 – 15:00','Universidad'),
+      plain('pm','15:15 – 16:15','Comida'),
+      routineBlock('pm','16:15 – 17:25','chest-b'),
+      plain('pm','18:00 – 19:30','Applications'),
+      plain('nt','20:30 – dormir','Cena → meditación 5–10 min → sueño','meditation-only'),
+    ]
+  });
+
+  days.push({ key:'viernes', jsDay:5, name:'Viernes', tag:'Pierna', rest:false,
+    blocks:[
+      plain('am','06:40 – 08:00','Levantar → bloque AM → desayuno','am-block'),
+      plain('am','08:00 – 13:00','Universidad'),
+      plain('pm','13:00 – 13:30','Comida (antes de gym)'),
+      routineBlock('pm','13:15 – 13:30','pre-leg-mobility'),
+      routineBlock('pm','13:30 – 14:30','legs'),
+      routineBlock('pm','14:30 – 14:45','movement-b'),
+      plain('pm','15:30 – 17:30','Applications'),
+      plain('nt','Desde 17:30','Libre para social/descanso. Meditación mínima antes de dormir','meditation-only'),
+    ]
+  });
+
+  days.push({ key:'sabado', jsDay:6, name:'Sábado', tag:'Espalda B', rest:false,
+    note:'Si hay futsal el domingo: mantener ~2 RIR en los accesorios de pierna/gemelo de esta sesión.',
+    blocks:[
+      plain('am','~08:30 – 09:00','Levantar → desayuno'),
+      routineBlock('am','10:30 – 11:40','back-b'),
+      plain('pm','12:00 – 14:00','Applications / catch-up'),
+      plain('nt','Resto del día','Protegido para vida social / descanso'),
+    ]
+  });
+
+  const domingoAM = ligaMode === 'activas'
+    ? [ plain('am','Mañana temprano','Levantar 75–90 min antes → desayuno'), plain('am','Mañana','Futsal primera hora → comida') ]
+    : [ routineBlock('am','Mañana AM','zone2') ];
+  days.push({ key:'domingo', jsDay:0, name:'Domingo', tag:'Recuperación', rest:true,
+    blocks:[
+      ...domingoAM,
+      plain('pm','Tarde','Día de recuperación'),
+      routineBlock('nt','~18:30','excitation-control'),
+      routineBlock('nt','~19:00','movement-a'),
+      routineBlock('nt','~22:10 – dormir','pelvic-floor'),
+    ]
+  });
+
+  return days;
+}
+function plain(period,time,txt,routineId){ return { period, time, txt, routineId: routineId||null }; }
+function routineBlock(period,time,routineId){ const r = ROUTINES[routineId]; return { period, time, txt:`<b>${r.name}</b>`, routineId }; }
+
+function isoWeekKey(d){
+  const date = new Date(d.getTime()); date.setHours(0,0,0,0);
+  date.setDate(date.getDate() + 3 - ((date.getDay()+6)%7));
+  const week1 = new Date(date.getFullYear(),0,4);
+  const weekNo = 1 + Math.round(((date - week1)/86400000 - 3 + ((week1.getDay()+6)%7))/7);
+  return date.getFullYear()+'-W'+weekNo;
+}
+const CHECK_KEY = 'plan-checks-' + isoWeekKey(new Date());
+const SETTINGS_KEY = 'plan-settings';
+const TRACK_KEY = 'plan-tracking';
+function load(key, fallback){ try{ const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }catch(e){ return fallback; } }
+function save(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){} }
+
+let checks = load(CHECK_KEY, {});
+let settings = load(SETTINGS_KEY, { ligaMode:'pre', fut7Day:'ninguno' });
+let tracking = load(TRACK_KEY, {});
+const todayJsDay = new Date().getDay();
+let WEEK = buildWeek(settings);
+
+document.querySelectorAll('.tab-btn').forEach((btn,i)=>{
+  if(i===0) btn.classList.add('is-active');
+  btn.addEventListener('click', ()=> switchTab(btn.dataset.tab));
+});
+function switchTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('is-active', b.dataset.tab===tab));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('is-active', p.id==='panel-'+tab));
+}
+document.getElementById('cta-ver-hoy').addEventListener('click', ()=>{
+  switchTab('semana');
+  const todayData = WEEK.find(d=>d.jsDay===todayJsDay);
+  if(todayData){ setTimeout(()=>document.getElementById('day-'+todayData.key).scrollIntoView({behavior:'smooth'}), 50); }
+});
+
+function renderSettingsUI(){
+  document.querySelectorAll('#liga-toggle button').forEach(b=> b.classList.toggle('is-on', b.dataset.val === settings.ligaMode));
+  document.getElementById('fut7-select').value = settings.fut7Day;
+}
+document.querySelectorAll('#liga-toggle button').forEach(b=>{
+  b.addEventListener('click', ()=>{ settings.ligaMode = b.dataset.val; save(SETTINGS_KEY, settings); rebuild(); });
+});
+document.getElementById('fut7-select').addEventListener('change', e=>{ settings.fut7Day = e.target.value; save(SETTINGS_KEY, settings); rebuild(); });
+function rebuild(){ WEEK = buildWeek(settings); renderSettingsUI(); renderDays(); renderWeekStrip(); renderToday(); }
+
+function blockId(dayKey, idx){ return dayKey+'-'+idx; }
+function dayProgress(day){
+  const total = day.blocks.length;
+  let done=0; day.blocks.forEach((b,i)=>{ if(checks[blockId(day.key,i)]) done++; });
+  return { done, total, pct: total ? Math.round(done/total*100) : 0 };
+}
+
+function renderDays(){
+  const daysEl = document.getElementById('days');
+  daysEl.innerHTML = '';
+  WEEK.forEach(day=>{
+    const isToday = day.jsDay === todayJsDay;
+    const wrap = document.createElement('div');
+    wrap.className = 'day' + (isToday?' is-today':'');
+    wrap.id = 'day-'+day.key;
+    const head = document.createElement('div');
+    head.className = 'day-head';
+    head.innerHTML = `<div class="day-name">${day.name}</div><div class="day-tag${day.rest?' rest':''}">${day.tag}</div>${isToday?'<div class="day-today-tag">HOY</div>':''}<div class="day-score" data-score-for="${day.key}"></div>`;
+    wrap.appendChild(head);
+    const blocksEl = document.createElement('div');
+    blocksEl.className = 'blocks';
+    day.blocks.forEach((b,i)=>{
+      const id = blockId(day.key,i);
+      const row = document.createElement('div');
+      row.className = 'block-row' + (checks[id]?' is-done':'');
+      row.id = 'block-'+id;
+      const routine = b.routineId ? ROUTINES[b.routineId] : null;
+      row.innerHTML = `
+        <div class="block-bar" style="background:var(--${b.period})"></div>
+        <div class="block-check"><input type="checkbox" data-id="${id}" ${checks[id]?'checked':''}></div>
+        <div class="block-main" ${b.routineId?`data-open-routine="${b.routineId}"`:''}>
+          <span class="label">${b.time}</span>
+          <span class="txt">${b.txt}</span>
+          ${routine?`<span class="meta">${routine.duration}${routine.tbd?' · por concretar':''}</span>`:''}
+        </div>
+        <div class="expand-hint">${b.routineId?'ver →':''}</div>`;
+      blocksEl.appendChild(row);
+    });
+    wrap.appendChild(blocksEl);
+    if(day.note){
+      const note = document.createElement('div');
+      note.className = 'day-note';
+      note.textContent = day.note;
+      wrap.appendChild(note);
+    }
+    daysEl.appendChild(wrap);
+  });
+  document.getElementById('days').addEventListener('change', onCheckChange);
+  document.querySelectorAll('[data-open-routine]').forEach(el=>{
+    el.addEventListener('click', ()=> openDrawer(el.dataset.openRoutine));
+  });
+}
+function onCheckChange(e){
+  if(!e.target.matches('input[type=checkbox]')) return;
+  const id = e.target.dataset.id;
+  checks[id] = e.target.checked;
+  save(CHECK_KEY, checks);
+  document.getElementById('block-'+id).classList.toggle('is-done', e.target.checked);
+  renderScores(); renderToday();
+}
+
+function renderWeekStrip(){
+  const strip = document.getElementById('week-strip');
+  strip.innerHTML = '';
+  WEEK.forEach(day=>{
+    const pill = document.createElement('div');
+    pill.className = 'week-pill' + (day.jsDay===todayJsDay?' is-today':'');
+    pill.id = 'pill-'+day.key;
+    pill.innerHTML = `${day.name.slice(0,3)}<span class="pct">0%</span>`;
+    pill.addEventListener('click', ()=>{ switchTab('semana'); setTimeout(()=>document.getElementById('day-'+day.key).scrollIntoView({behavior:'smooth'}), 50); });
+    strip.appendChild(pill);
+  });
+  renderScores();
+}
+function renderScores(){
+  WEEK.forEach(day=>{
+    const {done,total,pct} = dayProgress(day);
+    const pill = document.getElementById('pill-'+day.key);
+    if(pill) pill.querySelector('.pct').textContent = pct+'%';
+    const label = document.querySelector(`[data-score-for="${day.key}"]`);
+    if(label) label.textContent = `${done}/${total}`;
+  });
+}
+
+function estimateMinutes(day, fromIdx){
+  let mins = 0;
+  for(let i=fromIdx;i<day.blocks.length;i++){
+    const b = day.blocks[i];
+    const r = b.routineId ? ROUTINES[b.routineId] : null;
+    if(r && /\d+/.test(r.duration)){
+      const m = r.duration.match(/(\d+)(?:–(\d+))?/);
+      mins += m ? (m[2]?(+m[1]+ +m[2])/2:+m[1]) : 30;
+    } else if(!checks[blockId(day.key,i)]) {
+      mins += 25;
+    }
+  }
+  return mins;
+}
+function renderToday(){
+  const day = WEEK.find(d=>d.jsDay===todayJsDay);
+  if(!day) return;
+  const {done,total,pct} = dayProgress(day);
+  document.getElementById('today-title').textContent = day.name + ' — ' + day.tag;
+  const fecha = new Date().toLocaleDateString('es-ES', {weekday:'long', day:'numeric', month:'long'});
+  document.getElementById('today-eyebrow').textContent = 'HOY · ' + fecha.toUpperCase();
+  document.getElementById('stat-pct').textContent = pct+'%';
+  document.getElementById('stat-done').textContent = `${done}/${total}`;
+  const nextIdx = day.blocks.findIndex((b,i)=>!checks[blockId(day.key,i)]);
+  const remainingMin = nextIdx===-1 ? 0 : estimateMinutes(day, nextIdx);
+  document.getElementById('stat-time').textContent = nextIdx===-1 ? '0 min' : `~${remainingMin} min`;
+  const nextEl = document.getElementById('today-next');
+  if(nextIdx===-1){ nextEl.innerHTML = 'Todos los bloques de hoy están completados.'; }
+  else{
+    const b = day.blocks[nextIdx];
+    const clean = b.txt.replace(/<\/?b>/g,'');
+    nextEl.innerHTML = `Siguiente: <b>${clean}</b> · ${b.time}`;
+  }
+  const chipsEl = document.getElementById('today-chips');
+  chipsEl.innerHTML = '';
+  const objectives = new Set();
+  day.blocks.forEach(b=>{ const r = b.routineId ? ROUTINES[b.routineId] : null; if(r) objectives.add(r.category); });
+  if(day.rest) objectives.add('Recuperación');
+  objectives.forEach(o=>{ const chip = document.createElement('span'); chip.className='chip'; chip.textContent=o; chipsEl.appendChild(chip); });
+  renderScores();
+}
+
+function renderRoutineGrid(){
+  const grid = document.getElementById('routine-grid');
+  grid.innerHTML = '';
+  Object.keys(ROUTINES).forEach(id=>{
+    const r = ROUTINES[id];
+    const card = document.createElement('div');
+    card.className = 'routine-card' + (r.tbd?' is-tbd':'');
+    card.innerHTML = `<div class="rname">${r.name}</div><div class="rmeta">${r.category} · ${r.duration}</div>${r.tbd?'<div class="tbd-flag">rutina habitual · por concretar</div>':''}`;
+    card.addEventListener('click', ()=> openDrawer(id));
+    grid.appendChild(card);
+  });
+}
+
+const overlay = document.getElementById('drawer-overlay');
+document.getElementById('drawer-close').addEventListener('click', closeDrawer);
+overlay.addEventListener('click', e=>{ if(e.target===overlay) closeDrawer(); });
+function closeDrawer(){ overlay.classList.remove('is-open'); }
+function openDrawer(routineId){
+  const r = ROUTINES[routineId];
+  if(!r) return;
+  document.getElementById('drawer-title').textContent = r.name;
+  document.getElementById('drawer-meta').textContent = `${r.category} · ${r.duration} · ${r.frequency}`;
+  const body = document.getElementById('drawer-body');
+  body.innerHTML = '';
+  if(r.objective){ const obj = document.createElement('div'); obj.className = 'order-note'; obj.textContent = r.objective; body.appendChild(obj); }
+  if(r.tbd){ const tbd = document.createElement('div'); tbd.className = 'tbd-note'; tbd.textContent = 'Ejercicios todavía no definidos para esta rutina habitual — se añadirán más adelante.'; body.appendChild(tbd); }
+  (r.items||[]).forEach((it,exIdx)=>{
+    const hasDetail = !!(it.target || (it.how&&it.how.length) || (it.avoid&&it.avoid.length) || it.trackId);
+    const ex = document.createElement('div');
+    ex.className = 'exercise';
+    ex.innerHTML = `
+      <div class="exercise-head${hasDetail?' is-clickable':''}" ${hasDetail?'data-exercise-toggle="1"':''}>
+        <span class="exercise-name">${it.name}</span>
+        <span class="exercise-sets">${it.sets||''}${hasDetail?' <span class=\"exercise-arrow\">›</span>':''}</span>
+      </div>
+      <div class="exercise-detail" style="display:none;">
+        ${it.target?`<div class="ex-block ex-target"><b>Target</b><p>${it.target}</p></div>`:''}
+        ${it.how && it.how.length?`<div class="ex-block ex-how"><b>Cómo hacerlo</b><ul>${it.how.map(n=>`<li>${n}</li>`).join('')}</ul></div>`:''}
+        ${it.avoid && it.avoid.length?`<div class="ex-block ex-avoid"><b>Evitar</b><ul>${it.avoid.map(n=>`<li>${n}</li>`).join('')}</ul></div>`:''}
+      </div>
+    `;
+    if(hasDetail){
+      const head = ex.querySelector('.exercise-head');
+      const detail = ex.querySelector('.exercise-detail');
+      head.addEventListener('click', ()=>{
+        const open = detail.style.display !== 'none';
+        detail.style.display = open ? 'none' : 'block';
+        head.classList.toggle('is-open', !open);
+      });
+    }
+    if(it.trackId){ ex.querySelector('.exercise-detail').appendChild(buildTrackWidget(it.trackId)); ex.querySelector('.exercise-detail').style.display = ex.querySelector('.exercise-detail').style.display; }
+    body.appendChild(ex);
+  });
+  if(r.orderNote){ const on = document.createElement('div'); on.className = 'order-note'; on.textContent = r.orderNote; body.appendChild(on); }
+  if(r.tbdNote){ const tn = document.createElement('div'); tn.className = 'tbd-note'; tn.textContent = r.tbdNote; body.appendChild(tn); }
+  overlay.classList.add('is-open');
+}
+function buildTrackWidget(trackId){
+  const box = document.createElement('div');
+  box.className = 'track-box';
+  const last = tracking[trackId] && tracking[trackId].last;
+  const lastText = last ? `Last: ${last.weight||'—'} kg × ${(last.reps||[]).join(' / ')}` : 'Sin registros previos.';
+  box.innerHTML = `<div class="track-last">${lastText}</div><div class="track-inputs"><input type="number" placeholder="kg" class="t-weight" inputmode="decimal"><span class="unit">kg</span><input type="number" placeholder="reps" class="t-r1" inputmode="numeric"><input type="number" placeholder="reps" class="t-r2" inputmode="numeric"><input type="number" placeholder="reps" class="t-r3" inputmode="numeric"><button class="track-save">Guardar</button><span class="track-saved-msg" style="display:none;">Guardado ✓</span></div>`;
+  box.querySelector('.track-save').addEventListener('click', ()=>{
+    const weight = box.querySelector('.t-weight').value;
+    const reps = [box.querySelector('.t-r1').value, box.querySelector('.t-r2').value, box.querySelector('.t-r3').value].filter(Boolean);
+    if(!weight && reps.length===0) return;
+    tracking[trackId] = { last:{weight, reps}, updatedAt: new Date().toISOString() };
+    save(TRACK_KEY, tracking);
+    box.querySelector('.track-last').textContent = `Last: ${weight||'—'} kg × ${reps.join(' / ')}`;
+    const msg = box.querySelector('.track-saved-msg');
+    msg.style.display='inline'; setTimeout(()=>msg.style.display='none', 1800);
+  });
+  return box;
+}
+
+function renderProgression(){
+  const list = document.getElementById('progression-list');
+  list.innerHTML = '';
+  PROGRESSION.forEach(p=>{
+    const item = document.createElement('div');
+    item.className = 'prog-item';
+    item.innerHTML = `<h4>${p.title}</h4><div class="prog-steps">${p.steps.map(s=>`<span class="prog-step">${s}</span>`).join('')}</div>${p.note?`<p>${p.note}</p>`:''}`;
+    list.appendChild(item);
+  });
+  const goalsGrid = document.getElementById('goals-grid');
+  goalsGrid.innerHTML = '';
+  Object.keys(GOALS).forEach(cat=>{
+    const card = document.createElement('div');
+    card.className = 'goal-cat';
+    card.innerHTML = `<h4>${cat}</h4><ul>${GOALS[cat].map(g=>`<li>${g}</li>`).join('')}</ul>`;
+    goalsGrid.appendChild(card);
+  });
+}
+function renderRules(){
+  const list = document.getElementById('rules-list');
+  list.innerHTML = '';
+  RULES.forEach(r=>{
+    const item = document.createElement('div');
+    item.className = 'rule-item';
+    item.innerHTML = `<button class="rule-q"><span>${r.q}</span><span class="arrow">›</span></button><div class="rule-a">${r.a}</div>`;
+    item.querySelector('.rule-q').addEventListener('click', ()=> item.classList.toggle('is-open'));
+    list.appendChild(item);
+  });
+}
+
+document.getElementById('reset-week').addEventListener('click', ()=>{
+  if(confirm('¿Reiniciar el progreso de esta semana?')){ checks = {}; save(CHECK_KEY, checks); renderDays(); renderWeekStrip(); renderToday(); }
+});
+document.getElementById('reset-tracking').addEventListener('click', ()=>{
+  if(confirm('¿Borrar todos los datos de tracking (pesos/reps guardados)?')){ tracking = {}; save(TRACK_KEY, tracking); }
+});
+
+renderSettingsUI(); renderDays(); renderWeekStrip(); renderToday(); renderRoutineGrid(); renderProgression(); renderRules();
+</script>
+</body>
+</html>
