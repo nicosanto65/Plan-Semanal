@@ -189,6 +189,40 @@
 
   h2.section-title{font-size:22px;font-weight:500;margin:0 0 4px;}
   .section-sub{font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:13.5px;color:var(--sub);margin-bottom:6px;}
+
+  .hist-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0;font-family:-apple-system,Helvetica,Arial,sans-serif;}
+  .hist-stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 12px;}
+  .hist-stat .num{font-size:19px;font-weight:700;color:var(--accent);}
+  .hist-stat .lbl{font-size:10.5px;color:var(--sub);margin-top:2px;line-height:1.3;}
+  @media (max-width:600px){.hist-stats{grid-template-columns:repeat(2,1fr);}}
+
+  .hist-heatmap-wrap{overflow-x:auto;padding-bottom:6px;margin-top:6px;}
+  .hist-heatmap{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,12px);gap:3px;width:max-content;padding:2px;}
+  .hist-cell{width:12px;height:12px;border-radius:3px;background:var(--panel-2);border:1px solid var(--line-soft);cursor:default;}
+  .hist-cell[data-clickable="1"]{cursor:pointer;}
+  .hist-cell[data-lvl="0"]{background:var(--panel-2);}
+  .hist-cell[data-lvl="1"]{background:#3a4a2e;}
+  .hist-cell[data-lvl="2"]{background:#4d6a37;}
+  .hist-cell[data-lvl="3"]{background:#649242;}
+  .hist-cell[data-lvl="4"]{background:var(--ok);}
+  .hist-cell.is-today{box-shadow:0 0 0 1.5px var(--accent);}
+  .hist-cell.is-selected{box-shadow:0 0 0 1.5px var(--text);}
+  .hist-legend{display:flex;align-items:center;gap:5px;font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:11px;color:var(--sub-2);margin:8px 0 22px;}
+  .hist-legend .hist-cell{cursor:default;}
+
+  .hist-detail{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;font-family:-apple-system,Helvetica,Arial,sans-serif;}
+  .hist-detail-empty{color:var(--sub-2);font-size:13px;}
+  .hist-detail-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;flex-wrap:wrap;gap:6px;}
+  .hist-detail-head h4{margin:0;font-size:15px;font-family:'Georgia',serif;font-weight:600;}
+  .hist-detail-pct{font-size:13px;font-weight:700;color:var(--accent);}
+  .hist-detail ul{margin:0;padding-left:0;list-style:none;}
+  .hist-detail li{font-size:13px;padding:5px 0;border-top:1px solid var(--line-soft);display:flex;gap:8px;align-items:baseline;}
+  .hist-detail li:first-child{border-top:none;}
+  .hist-detail li.is-ok{color:#c7cbba;}
+  .hist-detail li.is-missed{color:var(--sub);}
+  .hist-detail li .mk{width:14px;flex:none;}
+  .hist-detail li.is-ok .mk{color:var(--ok);}
+  .hist-detail li.is-missed .mk{color:var(--tbd);}
 </style>
 </head>
 <body>
@@ -198,6 +232,7 @@
     <button class="tab-btn" data-tab="hoy">HOY</button>
     <button class="tab-btn" data-tab="semana">SEMANA</button>
     <button class="tab-btn" data-tab="rutinas">RUTINAS</button>
+    <button class="tab-btn" data-tab="historial">HISTORIAL</button>
     <button class="tab-btn" data-tab="progresion">PROGRESIÓN</button>
     <button class="tab-btn" data-tab="reglas">REGLAS</button>
   </div>
@@ -263,6 +298,30 @@
   <h2 class="section-title">Biblioteca de rutinas</h2>
   <div class="section-sub">Consulta cualquier rutina independientemente del día. Lo marcado como "por concretar" no tiene ejercicios definidos todavía.</div>
   <div class="routine-grid" id="routine-grid"></div>
+</section>
+
+<section class="panel" id="panel-historial">
+  <h2 class="section-title">Historial de cumplimiento</h2>
+  <div class="section-sub">Cada casilla es un día real. El color indica cuánto completaste; toca un día para ver el detalle.</div>
+
+  <div class="hist-stats" id="hist-stats"></div>
+
+  <div class="hist-heatmap-wrap">
+    <div class="hist-heatmap" id="hist-heatmap"></div>
+  </div>
+  <div class="hist-legend">
+    <span>Menos</span>
+    <span class="hist-cell" data-lvl="0"></span>
+    <span class="hist-cell" data-lvl="1"></span>
+    <span class="hist-cell" data-lvl="2"></span>
+    <span class="hist-cell" data-lvl="3"></span>
+    <span class="hist-cell" data-lvl="4"></span>
+    <span>Más</span>
+  </div>
+
+  <div class="hist-detail" id="hist-detail">
+    <div class="hist-detail-empty">Toca un día del mapa para ver qué completaste y qué te dejaste.</div>
+  </div>
 </section>
 
 <section class="panel" id="panel-progresion">
@@ -1004,6 +1063,7 @@ function onCheckChange(e){
   save(CHECK_KEY, checks);
   document.getElementById('block-'+id).classList.toggle('is-done', e.target.checked);
   renderScores(); renderToday();
+  if(document.getElementById('panel-historial').classList.contains('is-active')) renderHistorial();
 }
 
 function renderWeekStrip(){
@@ -1184,7 +1244,131 @@ document.getElementById('reset-tracking').addEventListener('click', ()=>{
   if(confirm('¿Borrar todos los datos de tracking (pesos/reps guardados)?')){ tracking = {}; save(TRACK_KEY, tracking); }
 });
 
-renderSettingsUI(); renderDays(); renderWeekStrip(); renderToday(); renderRoutineGrid(); renderProgression(); renderRules();
+/* ---------- Historial / heatmap ---------- */
+function isoWeekMonday(weekKey){
+  const m = weekKey.match(/^(\d{4})-W(\d{1,2})$/);
+  if(!m) return null;
+  const year = +m[1], week = +m[2];
+  const jan4 = new Date(year,0,4);
+  const jan4Day = (jan4.getDay()+6)%7;
+  const week1Monday = new Date(jan4); week1Monday.setDate(jan4.getDate()-jan4Day);
+  const monday = new Date(week1Monday); monday.setDate(week1Monday.getDate() + (week-1)*7);
+  monday.setHours(0,0,0,0);
+  return monday;
+}
+function dateOffsetForJsDay(jsDay){ return jsDay===0 ? 6 : jsDay-1; }
+function ymd(d){ const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
+
+function buildHistory(){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const history = {};
+  for(let i=0;i<localStorage.length;i++){
+    const key = localStorage.key(i);
+    if(!key || !/^plan-checks-\d{4}-W\d{1,2}$/.test(key)) continue;
+    const weekKey = key.replace('plan-checks-','');
+    const monday = isoWeekMonday(weekKey);
+    if(!monday) continue;
+    const weekChecks = load(key, {});
+    WEEK.forEach(day=>{
+      const date = new Date(monday); date.setDate(monday.getDate() + dateOffsetForJsDay(day.jsDay));
+      if(date > today) return;
+      const dateStr = ymd(date);
+      let done=0; const blocksDetail = [];
+      day.blocks.forEach((b,i)=>{
+        const isChecked = !!weekChecks[blockId(day.key,i)];
+        if(isChecked) done++;
+        blocksDetail.push({ time:b.time, txt:b.txt.replace(/<\/?b>/g,''), done:isChecked });
+      });
+      const total = day.blocks.length;
+      history[dateStr] = { dateStr, dayName:day.name, tag:day.tag, done, total, pct: total?Math.round(done/total*100):0, blocks:blocksDetail };
+    });
+  }
+  return history;
+}
+
+function histLevel(entry){
+  if(!entry || entry.total===0) return 0;
+  if(entry.pct===0) return 1;
+  if(entry.pct<50) return 2;
+  if(entry.pct<100) return 3;
+  return 4;
+}
+
+let selectedHistDate = null;
+
+function renderHistorial(){
+  const history = buildHistory();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const days = 91;
+  const start = new Date(today); start.setDate(today.getDate() - (days-1));
+  const startOffset = dateOffsetForJsDay(start.getDay());
+  const gridStart = new Date(start); gridStart.setDate(start.getDate() - startOffset);
+
+  const heatmap = document.getElementById('hist-heatmap');
+  heatmap.innerHTML = '';
+  const cursor = new Date(gridStart);
+  while(cursor <= today){
+    const dateStr = ymd(cursor);
+    const entry = history[dateStr];
+    const inRange = cursor >= start;
+    const cell = document.createElement('div');
+    cell.className = 'hist-cell';
+    if(cursor.getTime()===today.getTime()) cell.classList.add('is-today');
+    if(dateStr===selectedHistDate) cell.classList.add('is-selected');
+    cell.dataset.lvl = inRange ? histLevel(entry) : 0;
+    if(inRange){
+      const label = entry ? `${entry.dayName} ${dateStr}: ${entry.done}/${entry.total} (${entry.pct}%)` : `${dateStr}: sin datos`;
+      cell.title = label;
+      if(entry){
+        cell.dataset.clickable = '1';
+        cell.addEventListener('click', ()=>{ selectedHistDate = dateStr; renderHistDetail(entry); document.querySelectorAll('.hist-cell.is-selected').forEach(c=>c.classList.remove('is-selected')); cell.classList.add('is-selected'); });
+      }
+    } else {
+      cell.style.visibility = 'hidden';
+    }
+    heatmap.appendChild(cell);
+    cursor.setDate(cursor.getDate()+1);
+  }
+
+  const entries = Object.values(history).filter(e=>e.dateStr>=ymd(start) && e.dateStr<=ymd(today)).sort((a,b)=>a.dateStr.localeCompare(b.dateStr));
+  const trackedDays = entries.length;
+  const perfectDays = entries.filter(e=>e.pct===100).length;
+  const avgPct = trackedDays ? Math.round(entries.reduce((s,e)=>s+e.pct,0)/trackedDays) : 0;
+
+  let streak = 0;
+  for(let d=new Date(today); ; d.setDate(d.getDate()-1)){
+    const e = history[ymd(d)];
+    if(e && e.pct===100){ streak++; } else { break; }
+  }
+  let bestStreak=0, run=0;
+  entries.forEach(e=>{ if(e.pct===100){ run++; bestStreak=Math.max(bestStreak,run);} else { run=0; } });
+
+  const stats = document.getElementById('hist-stats');
+  stats.innerHTML = `
+    <div class="hist-stat"><div class="num">${streak}</div><div class="lbl">racha actual (días 100%)</div></div>
+    <div class="hist-stat"><div class="num">${bestStreak}</div><div class="lbl">mejor racha (últimos ${days}d)</div></div>
+    <div class="hist-stat"><div class="num">${avgPct}%</div><div class="lbl">cumplimiento medio (${days}d)</div></div>
+    <div class="hist-stat"><div class="num">${perfectDays}/${trackedDays}</div><div class="lbl">días perfectos / registrados</div></div>
+  `;
+
+  if(selectedHistDate && history[selectedHistDate]){
+    renderHistDetail(history[selectedHistDate]);
+  } else {
+    const todayEntry = history[ymd(today)];
+    if(todayEntry){ selectedHistDate = ymd(today); renderHistDetail(todayEntry); }
+  }
+}
+function renderHistDetail(entry){
+  const box = document.getElementById('hist-detail');
+  const fecha = new Date(entry.dateStr+'T00:00:00').toLocaleDateString('es-ES', {weekday:'long', day:'numeric', month:'long'});
+  box.innerHTML = `
+    <div class="hist-detail-head"><h4>${fecha} · ${entry.tag}</h4><div class="hist-detail-pct">${entry.done}/${entry.total} · ${entry.pct}%</div></div>
+    <ul>${entry.blocks.map(b=>`<li class="${b.done?'is-ok':'is-missed'}"><span class="mk">${b.done?'✓':'○'}</span><span>${b.time} — ${b.txt}</span></li>`).join('')}</ul>
+  `;
+}
+
+renderSettingsUI(); renderDays(); renderWeekStrip(); renderToday(); renderRoutineGrid(); renderProgression(); renderRules(); renderHistorial();
+document.querySelector('[data-tab="historial"]').addEventListener('click', renderHistorial);
 </script>
 </body>
 </html>
